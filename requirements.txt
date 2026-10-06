@@ -1,0 +1,9 @@
+# malfunction – optional Python packages
+# the core ripper/mosher needs only the Python standard library + ffmpeg (brew install ffmpeg)
+#
+# optical-flow engine (--engine flow, presets: flow, flow-swirl)
+numpy>=1.21
+opencv-python>=4.5
+#
+# FFglitch (motion-vector hacking, --mv) is not a Python package:
+#   ./malfunction.py --install-ffglitch

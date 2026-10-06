@@ -1,0 +1,19 @@
+# Local media is intentionally not stored in Git.
+media/*
+!media/README.md
+
+# Generated output
+renders/
+TESTDISC/
+
+# Downloaded third-party tools (installed on demand)
+ffglitch/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Local state
+.installed
+.DS_Store
