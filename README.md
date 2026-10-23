@@ -1,8 +1,8 @@
 # malfunction
 
-A DVD ripper that **datamoshes the video while it rips**. Put in a disc or pick any video file, choose a look, and watch the picture melt live. You get a finished `.mp4` with sound.
+A DVD ripper that **corrupts the video while it rips**. Put in a disc or pick any video file as input; it outputs an `.mp4`.
 
-It follows the glitch-art tradition of Takeshi Murata, Nick Briz and Rosa Menkman: the codec itself is the material.
+Instead of adding a glitch filter on top of the image, it alters the codec itself: removing keyframes, repeating and rewriting motion, and bending the bytes of the compressed stream. These techniques are built on the shoulders of giants, the glitch artists and toolmakers credited at the bottom of this page.
 
 ## Install
 
