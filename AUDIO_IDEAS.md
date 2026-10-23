@@ -1,6 +1,6 @@
 # malfunction: audio glitch ideas
 
-Ideas for corrupting the soundtrack. **Option A (all five) is now built in** as `--audio-fx` (the **sound** section of the UI; see the README and MANUAL). Options B and C are still parked. The core idea: the video mosh already knows, frame by frame, when a keyframe is removed, when a bloom starts, when bytes are bent and how much things move. Each of those events can trigger a matching audio corruption at the same moment, so sound and image break together.
+Ideas for corrupting the soundtrack. **Option A (all five) is now built in** as `--audio-fx` (the **sound** section of the UI; see the MANUAL and REFERENCE.md). Options B and C are still parked. The core idea: the video mosh already knows, frame by frame, when a keyframe is removed, when a bloom starts, when bytes are bent and how much things move. Each of those events can trigger a matching audio corruption at the same moment, so sound and image break together.
 
 The audio currently has only `--audio clean | crushed | none`, where `crushed` is a static bitcrusher.
 

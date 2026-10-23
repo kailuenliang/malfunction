@@ -1,6 +1,6 @@
 # malfunction: user manual
 
-This is the hands-on guide: how to get set up, how to make your first rip, what every control does, recipes for particular looks, and what to do when something goes wrong. For how it works inside, the full flag list and references, see [README.md](README.md).
+This is the hands-on guide: how to get set up, how to make your first rip, what every control does, recipes for particular looks, and what to do when something goes wrong. For how it works inside, the full flag list and references, see [REFERENCE.md](REFERENCE.md).
 
 **Contents**
 
