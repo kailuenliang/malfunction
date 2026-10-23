@@ -29,6 +29,7 @@ sys.path.insert(0, HERE)
 import malfunction as mf  # noqa: E402
 
 ENGINE = os.path.join(HERE, "malfunction.py")
+WINDOWS = os.name == "nt"
 DEFAULT_OUT = os.path.join(HERE, "renders")
 VIDEO_EXT = (".mp4", ".mov", ".mkv", ".m4v", ".avi", ".vob", ".mpg", ".mpeg", ".webm", ".ts")
 
@@ -57,7 +58,7 @@ class Job:
     def start(self, params):
         if self.running():
             raise RuntimeError("a rip is already running")
-        cmd = [sys.executable, "-u", ENGINE, "--ui", "--snapshot", self.snapshot] + build_args(params)
+        cmd = [sys.executable, "-u", ENGINE, "--ui", "--control-stdin", "--snapshot", self.snapshot] + build_args(params)
         try:
             os.remove(self.snapshot)
         except OSError:
@@ -68,9 +69,9 @@ class Job:
             self.stderr.clear()
             self.last_good_jpeg = b""
             self.cmd = cmd
-        env = dict(os.environ, PYTHONUNBUFFERED="1")
-        self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     text=True, bufsize=1, env=env, cwd=HERE)
+        env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                     text=True, encoding="utf-8", errors="replace", bufsize=1, env=env, cwd=HERE)
         threading.Thread(target=self._read_out, daemon=True).start()
         threading.Thread(target=self._read_err, daemon=True).start()
 
@@ -114,17 +115,26 @@ class Job:
                 continue
             self.stderr.append(clean)
 
+    def _command(self, word):
+        """Send one command to the running rip through its input (works on Mac and Windows)."""
+        try:
+            self.proc.stdin.write(word + "\n")
+            self.proc.stdin.flush()
+            return True
+        except (OSError, ValueError, AttributeError):
+            return False
+
     def stop(self):
         if self.running():
             with self.lock:
                 self.state = "stopping"
-            self.proc.send_signal(signal.SIGINT)
+            if not self._command("stop") and not WINDOWS:
+                self.proc.send_signal(signal.SIGINT)
 
     def jump(self):
         """Tell a running looper to move to a new random position now."""
-        if self.running() and hasattr(signal, "SIGUSR1"):
-            self.proc.send_signal(signal.SIGUSR1)
-            return True
+        if self.running():
+            return self._command("jump")
         return False
 
     def discard_run(self):
@@ -133,7 +143,8 @@ class Job:
             with self.lock:
                 self.discard = True
                 self.state = "discarding"
-            self.proc.send_signal(signal.SIGINT)
+            if not self._command("stop") and not WINDOWS:
+                self.proc.send_signal(signal.SIGINT)
 
     def status(self):
         with self.lock:
@@ -211,7 +222,7 @@ def scan_sources(extra_dirs=()):
                           titles=[dict(n=t["n"], gb=round(t["size"] / 1e9, 2)) for t in titles],
                           encrypted=bool(titles and mf.check_scrambled(titles[0]["files"][0]))))
     files = []
-    dirs = [HERE, os.path.expanduser("~/Movies"), os.path.expanduser("~/Desktop"),
+    dirs = [HERE, os.path.expanduser("~/Movies"), os.path.expanduser("~/Videos"), os.path.expanduser("~/Desktop"),
             os.path.expanduser("~/Downloads")] + list(extra_dirs)
     seen = set()
     for d in dirs:
@@ -238,13 +249,14 @@ def scan_sources(extra_dirs=()):
 
 def _inside_out_dir(path):
     path = os.path.abspath(path)
+    path = os.path.normcase(path)
     return any(path.startswith(d + os.sep) for d in ALLOWED_MEDIA_DIRS)
 
 
 def delete_render_folder(folder):
     """Remove one rip's folder – only if it sits directly inside an output dir."""
     folder = os.path.abspath(folder)
-    if os.path.isdir(folder) and os.path.dirname(folder) in ALLOWED_MEDIA_DIRS:
+    if os.path.isdir(folder) and os.path.normcase(os.path.dirname(folder)) in ALLOWED_MEDIA_DIRS:
         shutil.rmtree(folder, ignore_errors=True)
         return True
     return False
@@ -255,7 +267,7 @@ def delete_render(path):
     if not _inside_out_dir(path):
         return False
     folder = os.path.dirname(path)
-    if folder in ALLOWED_MEDIA_DIRS:
+    if os.path.normcase(folder) in ALLOWED_MEDIA_DIRS:
         # an older, un-foldered render: remove just its own files
         stem = os.path.splitext(os.path.basename(path))[0]
         for f in glob.glob(os.path.join(folder, glob.escape(stem) + ".*")):
@@ -302,10 +314,18 @@ def install_dep(what):
             if what == "ffglitch":
                 r = subprocess.run([sys.executable, ENGINE, "--install-ffglitch"], capture_output=True, text=True)
             else:
-                base = [sys.executable, "-m", "pip", "install", "--user", "numpy", "opencv-python"]
-                r = subprocess.run(base, capture_output=True, text=True)
-                if r.returncode != 0 and "externally-managed" in (r.stderr + r.stdout):
-                    r = subprocess.run(base + ["--break-system-packages"], capture_output=True, text=True)
+                uv = os.path.join(mf.RUNTIME, "uv", "uv.exe" if WINDOWS else "uv")
+                req = os.path.join(HERE, "requirements.txt")
+                if os.path.isfile(uv):
+                    # the installer's private environment: add the packages there, nowhere else
+                    r = subprocess.run([uv, "pip", "install", "--python", sys.executable, "-r", req],
+                                       capture_output=True, text=True,
+                                       env=dict(os.environ, UV_CACHE_DIR=os.path.join(mf.RUNTIME, "cache")))
+                else:
+                    base = [sys.executable, "-m", "pip", "install", "--user", "numpy", "opencv-python"]
+                    r = subprocess.run(base, capture_output=True, text=True)
+                    if r.returncode != 0 and "externally-managed" in (r.stderr + r.stdout):
+                        r = subprocess.run(base + ["--break-system-packages"], capture_output=True, text=True)
             tail = (r.stderr or r.stdout).strip().splitlines()[-1:] or [""]
             DEPS["message"] = f"✔ {what} installed" if r.returncode == 0 else f"✖ {what}: {tail[0][:200]}"
         except Exception as e:
@@ -316,23 +336,46 @@ def install_dep(what):
     threading.Thread(target=run, daemon=True).start()
 
 
-def mac_pick_file():
-    if sys.platform != "darwin":
-        return None
-    script = ('POSIX path of (choose file with prompt "Pick a video, VOB, or VIDEO_TS file" '
-              'default location (path to movies folder))')
+def pick_file():
+    """Show the system's own file picker (Mac or Windows) and return the chosen path."""
     try:
-        r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=300)
-        return r.stdout.strip() or None
+        if sys.platform == "darwin":
+            script = ('POSIX path of (choose file with prompt "Pick a video, VOB, or VIDEO_TS file" '
+                      'default location (path to movies folder))')
+            r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=300)
+            return r.stdout.strip() or None
+        if WINDOWS:
+            ps = ("Add-Type -AssemblyName System.Windows.Forms;"
+                  "$f = New-Object System.Windows.Forms.OpenFileDialog;"
+                  "$f.Title = 'Pick a video, VOB, or VIDEO_TS file';"
+                  "$f.Filter = 'Video|*.mp4;*.mov;*.mkv;*.m4v;*.avi;*.vob;*.mpg;*.mpeg;*.webm;*.ts|All files|*.*';"
+                  "if ($f.ShowDialog() -eq 'OK') { $f.FileName }")
+            r = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", ps],
+                               capture_output=True, text=True, timeout=300,
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            return r.stdout.strip() or None
     except Exception:
         return None
+    return None
+
+
+def reveal(path):
+    """Show a file in Finder / Explorer."""
+    if not os.path.exists(path):
+        return
+    if sys.platform == "darwin":
+        subprocess.Popen(["open", "-R", path])
+    elif WINDOWS:
+        subprocess.Popen(["explorer", "/select,", os.path.normpath(path)])
+    else:
+        subprocess.Popen(["xdg-open", os.path.dirname(path)])
 
 
 # ────────────────────────────────────────────────────────────────────────────
 #  http
 # ────────────────────────────────────────────────────────────────────────────
 
-ALLOWED_MEDIA_DIRS = {os.path.abspath(DEFAULT_OUT)}
+ALLOWED_MEDIA_DIRS = {os.path.normcase(os.path.abspath(DEFAULT_OUT))}
 
 
 class H(BaseHTTPRequestHandler):
@@ -378,7 +421,7 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, JOB.status())
         if u.path == "/api/renders":
             d = os.path.expanduser(q.get("out", [DEFAULT_OUT])[0])
-            ALLOWED_MEDIA_DIRS.add(os.path.abspath(d))
+            ALLOWED_MEDIA_DIRS.add(os.path.normcase(os.path.abspath(d)))
             return self._send(200, list_renders(d))
         if u.path == "/api/frame":
             b = JOB.frame()
@@ -392,7 +435,7 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/api/run":
             p = self._body()
             if p.get("out"):
-                ALLOWED_MEDIA_DIRS.add(os.path.abspath(os.path.expanduser(p["out"])))
+                ALLOWED_MEDIA_DIRS.add(os.path.normcase(os.path.abspath(os.path.expanduser(p["out"]))))
             try:
                 JOB.start(p)
             except (RuntimeError, ValueError) as e:
@@ -415,17 +458,16 @@ class H(BaseHTTPRequestHandler):
                 install_dep(what)
             return self._send(200, {"ok": True})
         if u.path == "/api/pick":
-            return self._send(200, {"path": mac_pick_file()})
+            return self._send(200, {"path": pick_file()})
         if u.path == "/api/reveal":
-            path = self._body().get("path", "")
-            if sys.platform == "darwin" and os.path.exists(path):
-                subprocess.Popen(["open", "-R", path])
+            reveal(self._body().get("path", ""))
             return self._send(200, {"ok": True})
         return self._send(404, {"error": "not found"})
 
     def _media(self, path):
         path = os.path.abspath(path)
-        if not any(path.startswith(d + os.sep) for d in ALLOWED_MEDIA_DIRS) or not os.path.isfile(path):
+        if not any(os.path.normcase(path).startswith(d + os.sep) for d in ALLOWED_MEDIA_DIRS) \
+                or not os.path.isfile(path):
             return self._send(403, {"error": "forbidden"})
         size = os.path.getsize(path)
         ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
@@ -549,7 +591,7 @@ details{margin-top:4px}summary{cursor:pointer;color:var(--dim);font-size:11px;le
     <button id="pick">choose file…</button><button id="rescan">rescan</button>
   </div>
   <label>path (disc volume, VIDEO_TS, .VOB, or any video)</label>
-  <input type="text" id="source" placeholder="/Volumes/MY_DVD  or  ~/Movies/clip.mp4">
+  <input type="text" id="source" placeholder="/Volumes/MY_DVD · D:\ · or a video file">
   <div class="row">
     <div><label>title</label><input type="number" id="title" min="1" placeholder="auto"></div>
     <div><label>start (s)</label><input type="number" id="start" min="0" step="1" placeholder="0"></div>
@@ -758,7 +800,7 @@ $("rescan").onclick = scan;
 $("pick").onclick = async () => {
   const r = await api("/api/pick", {});
   if (r && r.path) $("source").value = r.path;
-  else if (!navigator.platform.startsWith("Mac")) alert("File picker needs macOS – type a path instead.");
+  else if (!/Mac|Win/.test(navigator.platform)) alert("The file picker works on Mac and Windows – type a path instead.");
 };
 
 function params(){

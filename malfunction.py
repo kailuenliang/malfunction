@@ -37,7 +37,26 @@ import sys
 import threading
 import time
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+WINDOWS = os.name == "nt"
+# everything the installers set up lives here (private Python, packages, ffmpeg, FFglitch);
+# deleting this one folder uninstalls it all
+RUNTIME = os.path.join(HERE, ".runtime")
+_rt_bin = os.path.join(RUNTIME, "ffmpeg")
+if os.path.isdir(_rt_bin):
+    # the private ffmpeg comes first, so a student's own ffmpeg (if any) is never used or touched
+    os.environ["PATH"] = _rt_bin + os.pathsep + os.environ.get("PATH", "")
+
+# the banner and strip use block characters: make sure a Windows console can print them
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+if WINDOWS:
+    os.system("")      # switches on ANSI colour handling in Windows 10+ consoles
 
 # ────────────────────────────────────────────────────────────────────────────
 #  terminal cosmetics
@@ -992,6 +1011,7 @@ class AudioFX:
         if b < total:
             y[b:] = x[b:]                    # anything past the video stays as it was
         y.flush()
+        del x, y                             # close the memory maps (Windows can't delete open files)
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -1206,26 +1226,73 @@ class Looper:
 #  FFglitch (motion-vector editing)
 # ────────────────────────────────────────────────────────────────────────────
 
-HERE = os.path.dirname(os.path.abspath(__file__))
 FFGLITCH_VERSION = "0.10.2"
 FFGLITCH_SHA256 = {
-    # verified against the official download on 2026-09-27
+    # verified against the official downloads (2026-09-27 / 2026-10-22)
     "ffglitch-0.10.2-macos-aarch64.zip": "25a5a7d51217919db5a093b211fd8a1e27845284efb0a6f616b8f371f6638eef",
+    "ffglitch-0.10.2-macos-x86_64.zip": "b03f45158b716951d4579f8fca24529325fb2bbea50805fee6e30b452f101e9d",
+    "ffglitch-0.10.2-linux-x86_64.zip": "28dd39eee7d5be6d6f6b3f126e25563118eb0b47dc174941509f64f90a09bd40",
+    "ffglitch-0.10.2-windows-x86_64.zip": "e5190462eafe9c28428d39f8392a6be93dfd6ac2d59ce08848edec79acf965ca",
 }
 
 
+def download(url, dest, tries=4):
+    """Download with retries. Uses certifi's certificates when available, because a
+    private Python may not see the system's certificate store."""
+    import ssl
+    import urllib.request
+    try:
+        import truststore                      # the computer's own certificate store (Keychain / Windows)
+        ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    except ImportError:
+        try:
+            import certifi
+            ctx = ssl.create_default_context(cafile=certifi.where())
+        except ImportError:
+            ctx = ssl.create_default_context()
+    tmp = dest + ".download"
+    last = None
+    for attempt in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "malfunction-installer"})
+            with urllib.request.urlopen(req, context=ctx, timeout=60) as r, open(tmp, "wb") as f:
+                total = int(r.headers.get("Content-Length") or 0)
+                done, last_print = 0, 0
+                while True:
+                    blk = r.read(1 << 20)
+                    if not blk:
+                        break
+                    f.write(blk)
+                    done += len(blk)
+                    if total and done - last_print > total / 10:
+                        last_print = done
+                        sys.stderr.write(f"\r    {done * 100 // total:3d}%  {done / 1e6:6.1f} MB")
+                        sys.stderr.flush()
+            if total:
+                sys.stderr.write("\r" + " " * 30 + "\r")
+            os.replace(tmp, dest)
+            return dest
+        except Exception as e:                       # network hiccups: try again
+            last = e
+            time.sleep(2 + 3 * attempt)
+    raise RuntimeError(f"download failed: {url} ({last})")
+
+
 def find_ffglitch(tool):
-    cands = [os.path.join(HERE, "ffglitch", tool), os.path.join(HERE, "bin", tool)]
-    cands += sorted(glob.glob(os.path.join(HERE, "ffglitch", "*", tool)))
+    names = [tool + ".exe", tool] if WINDOWS else [tool]
+    cands = []
+    for root in (os.path.join(RUNTIME, "ffglitch"), os.path.join(HERE, "ffglitch")):
+        for n in names:
+            cands += [os.path.join(root, n)] + sorted(glob.glob(os.path.join(root, "*", n)))
+    cands += [os.path.join(HERE, "bin", n) for n in names]
     for p in cands:
         if os.path.isfile(p) and os.access(p, os.X_OK):
             return p
     return shutil.which(tool)
 
 
-def install_ffglitch():
+def install_ffglitch(dest=None):
     import platform
-    import urllib.request
     import zipfile
     sysname, mach = platform.system(), platform.machine().lower()
     base = "https://ffglitch.org/pub/bin"
@@ -1240,7 +1307,9 @@ def install_ffglitch():
     else:
         die(f"no automatic FFglitch download for {sysname}/{mach} – get it from https://ffglitch.org/download/ "
             f"and put ffedit + ffgac in {os.path.join(HERE, 'ffglitch')}")
-    dest = os.path.join(HERE, "ffglitch")
+    if dest is None:
+        # inside the private runtime when the installer created one, else next to malfunction
+        dest = os.path.join(RUNTIME, "ffglitch") if os.path.isdir(RUNTIME) else os.path.join(HERE, "ffglitch")
     os.makedirs(dest, exist_ok=True)
     import hashlib
     zname = os.path.basename(url)
@@ -1269,9 +1338,11 @@ def install_ffglitch():
         if got:
             break
         log(f"downloading {url}" + (f"  (retry {attempt})" if attempt else ""))
-        tmp = zpath + ".download"
-        urllib.request.urlretrieve(url, tmp)
-        os.replace(tmp, zpath)
+        try:
+            download(url, zpath)
+        except RuntimeError as e:
+            log(c(YEL, f"  {e}"))
+            continue
         got = (want is None) or sha(zpath) == want
         if not got:
             log(c(YEL, "  checksum mismatch – the download was damaged"))
@@ -1285,7 +1356,7 @@ def install_ffglitch():
     os.remove(zpath)
     shutil.rmtree(parts_dir, ignore_errors=True)
     for tool in ("ffedit", "ffgac", "fflive", "qjs"):
-        for p in glob.glob(os.path.join(dest, "**", tool), recursive=True):
+        for p in glob.glob(os.path.join(dest, "**", tool + (".exe" if WINDOWS else "")), recursive=True):
             os.chmod(p, 0o755)
     if sysname == "Darwin":
         subprocess.run(["xattr", "-dr", "com.apple.quarantine", dest], stderr=subprocess.DEVNULL)
@@ -1303,6 +1374,8 @@ VOB_RE = re.compile(r"VTS_(\d\d)_(\d)\.VOB$", re.I)
 
 def find_video_ts_dirs():
     roots = ["/Volumes/*", "/media/*/*", "/media/*", "/run/media/*/*", "/mnt/*"]
+    if WINDOWS:
+        roots = [f"{d}:\\" for d in "DEFGHIJKLMNOPQRSTUVWXYZ"]
     found = []
     for r in roots:
         for d in glob.glob(r):
@@ -1368,7 +1441,8 @@ def check_scrambled(path, probe_bytes=4 << 20):
 def need(tool):
     p = shutil.which(tool)
     if not p:
-        die(f"'{tool}' not found. On macOS:  brew install ffmpeg")
+        die(f"'{tool}' not found. Run the installer (malfunction.command on a Mac, malfunction.bat on "
+            f"Windows) – it puts a private copy of ffmpeg in {RUNTIME}")
     return p
 
 
@@ -1563,6 +1637,8 @@ examples:
     g.add_argument("--preview", action="store_true", help="live ffplay window of the mosh")
     g.add_argument("--snapshot", help="keep writing the latest moshed frame to this JPEG")
     g.add_argument("--ui", action="store_true", help="JSON-lines progress on stdout (for malfunction_ui)")
+    g.add_argument("--control-stdin", action="store_true",
+                   help="read commands from stdin: 'stop' (finish and keep what's done), 'jump' (looper: new position)")
 
     g = p.add_argument_group("mosh")
     g.add_argument("--preset", choices=list(PRESETS), default="liquid")
@@ -1709,6 +1785,20 @@ def main(argv=None):
     jump_target = []
     if hasattr(signal, "SIGUSR1"):
         signal.signal(signal.SIGUSR1, lambda *_: jump_target and jump_target[0].request_jump())
+    if args.control_stdin:
+        # Windows has no SIGUSR1 and no gentle way to send ctrl-c to another process, so the UI
+        # talks to the rip through its input instead – one word per line
+        import _thread
+
+        def _commands():
+            for line in sys.stdin:
+                cmd = line.strip().lower()
+                if cmd == "jump" and jump_target:
+                    jump_target[0].request_jump()
+                elif cmd == "stop":
+                    _thread.interrupt_main()        # same as ctrl-c: finish and keep what's done
+                    return
+        threading.Thread(target=_commands, daemon=True).start()
 
     inp, label, vob = select_source(args)
     if vob:

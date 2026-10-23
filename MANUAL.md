@@ -23,25 +23,40 @@ This is the hands-on guide: how to get set up, how to make your first rip, what 
 
 **You need:**
 
-- a Mac with Homebrew
-- ffmpeg: `brew install ffmpeg`
-- Python 3, which Homebrew's ffmpeg usually brings along. If not, run `xcode-select --install`.
+- a Mac or a Windows PC
+- an internet connection for the first launch (about 600–750 MB, a few minutes)
 - for DVDs, an external DVD drive
 
-**Then double-click `malfunction.command`.** The first time, it checks for the two optional extras, installs any that are missing, then opens the UI in your browser:
+Nothing else: no Homebrew, no Python, no admin password. malfunction installs everything it needs into a hidden `.runtime` folder **inside the malfunction folder** and changes nothing else on the computer. To uninstall, delete the folder. The same steps are in `START HERE.txt`.
 
-- numpy + OpenCV (listed in `requirements.txt`), for the `flow` engine
-- FFglitch, for motion-vector hacking. It's downloaded into the `ffglitch` folder.
+**On a Mac, the first time:**
 
-Once both extras are working, the launcher writes a small hidden file called `.installed`, and every later launch skips the check and opens the UI straight away. To make it check again (after moving the folder or updating Python, say), delete `.installed`: in Terminal, `rm ~/Desktop/Software/malfunction/.installed`.
+1. Open **Terminal** (Cmd + Space, type Terminal, Enter).
+2. Type `bash ` with a space after it.
+3. Drag `malfunction.command` from the folder into the Terminal window.
+4. Press Enter.
 
-Leave the Terminal window open while you work. Closing it quits malfunction.
+Newer macOS versions block double-clicking scripts downloaded from the internet. Running it once this way gets around that, and the installer then removes the block from its own folder. **After that, just double-click `malfunction.command`.**
 
-In the UI's **motion hacking** section, check that both extras say **ready**. If one says **missing**, click its install button, or see [Troubleshooting](#10-troubleshooting).
+**On Windows:**
 
-> The first time you double-click, macOS may say the file "can't be opened because it is from an unidentified developer". Right-click `malfunction.command` → **Open** → **Open**. You only need to do this once.
+1. Extract the zip (right-click → **Extract All…**). Don't run it from inside the zip.
+2. Double-click `malfunction.bat`.
+3. If "Windows protected your PC" appears: **More info → Run anyway** (first time only).
 
----
+**What the first launch does:**
+
+1. Gets a small tool called uv.
+2. Uses it to fetch a private Python.
+3. Installs numpy and OpenCV into that Python only.
+4. Downloads ffmpeg and FFglitch.
+5. Opens the UI in your browser.
+
+Later launches go straight to the UI. If the folder is moved or a download was interrupted, the next launch repairs it.
+
+Leave the Terminal (or black) window open while you work. Closing it quits malfunction.
+
+In the UI's **motion hacking** section, FFglitch and the flow engine should both say **ready**.
 
 ## 2. Your first rip in five steps
 
@@ -469,12 +484,16 @@ The progress line shows speed: ×1.0 means real time, and ×0.5 means a 10-minut
 | problem | fix |
 |---|---|
 | Double-clicking `malfunction.command` does nothing / "unidentified developer" | Right-click → **Open** → **Open** (once). |
-| The Terminal window flashes and closes | Run it by hand to see the error: `cd ~/Desktop/Software/malfunction && python3 malfunction_ui.py` |
+| Mac: "malfunction.command can't be opened" / "Apple could not verify…" | Run it once through Terminal: type `bash `, drag the file in, press Enter (see Setup). After that, double-clicking works. |
+| Windows: "Windows protected your PC" | Click **More info → Run anyway** (first time only). |
+| Windows: "still inside the zip file" | Right-click the zip → **Extract All…**, then run `malfunction.bat` from the extracted folder. |
+| Setup stops with an error | Check the internet connection and run it again; it continues where it stopped. On a school network, a blocked download site (github.com, ffmpeg.martin-riedl.de, gyan.dev, ffglitch.org, pypi.org) is the usual cause: ask IT to allow it. |
+| The window flashes and closes | Run it from Terminal to see the message: `bash ` + drag `malfunction.command` (Mac). On Windows, the window stays open on errors. |
 | "port 8765 is busy" | malfunction is already running in another Terminal window. Use that one, or close it and relaunch. |
-| "ffmpeg not found" | `brew install ffmpeg` |
+| "ffmpeg not found" | Run the installer again (`malfunction.command` / `malfunction.bat`); it puts ffmpeg in `.runtime`. |
 | "externally-managed-environment" during install | This is normal on Homebrew Python. The launcher retries automatically, and the lines after it should say "Successfully installed". |
-| flow engine **missing** | Click **install numpy + OpenCV**, or run `python3 -m pip install --user --break-system-packages -r requirements.txt` |
-| FFglitch **missing** / "motion-vector hacking needs FFglitch" | Click **install FFglitch**, or run `./malfunction.py --install-ffglitch` |
+| flow engine **missing** | Click **install numpy + OpenCV**, or run the installer again. |
+| FFglitch **missing** / "motion-vector hacking needs FFglitch" | Click **install FFglitch**, or run the installer again (ffglitch.org is sometimes slow; it retries). |
 | "this disc looks encrypted" | A commercial CSS-protected disc. malfunction can't read it; use an unencrypted disc or a video file. |
 | No disc in the source list | Click **rescan**. Check that the disc shows up in Finder. Or type its path, like `/Volumes/DISC_NAME`. |
 | Sound out of sync with the picture | This was a bug in earlier versions on the `h264` engine (the default `liquid` look and the looper) and is fixed; re-render with the current version. If it still happens, send me the rip's `.log`. |
@@ -489,7 +508,12 @@ The progress line shows speed: ×1.0 means real time, and ×0.5 means a 10-minut
 
 ## 11. Command-line quick reference
 
-Everything in the UI is also available from Terminal, in the malfunction folder:
+Everything in the UI is also available from Terminal, in the malfunction folder. The commands here and in the recipes are written as `./malfunction.py …`. To use the installer's private setup, start them with the private Python instead:
+
+- **Mac:** `.runtime/venv/bin/python malfunction.py --preset liquid …`
+- **Windows:** `.runtime\venv\Scripts\python.exe malfunction.py --preset liquid …`
+
+
 
 ```bash
 ./malfunction.py --list                                  # discs and titles

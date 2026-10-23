@@ -1,0 +1,64 @@
+MALFUNCTION - how to install
+============================
+
+malfunction installs itself into this folder. It does not change anything else on
+your computer and does not need an admin password. The first time takes a few
+minutes and downloads about 600 MB, so stay on the internet. After that it opens
+in a few seconds.
+
+To uninstall: delete the malfunction folder. That's it.
+
+
+ON A MAC
+--------
+
+First time only:
+
+  1. Open the Terminal app. (Press Cmd + Space, type Terminal, press Enter.)
+  2. Type  bash  and a space. Don't press Enter yet.
+  3. Drag the file "malfunction.command" from this folder into the Terminal window.
+  4. Press Enter.
+
+  It sets itself up, then opens malfunction in your web browser.
+  Leave the Terminal window open while you use it; closing it quits malfunction.
+
+Every time after that:
+
+  Double-click "malfunction.command".
+
+  (Why the Terminal the first time? Newer versions of macOS block double-clicking
+  scripts that were downloaded from the internet. Running it once through Terminal
+  gets around that, and malfunction then removes the block from its own folder.)
+
+
+ON WINDOWS
+----------
+
+  1. If you downloaded a zip file: right-click it, choose "Extract All...", and open
+     the extracted folder. (Don't run it from inside the zip.)
+  2. Double-click "malfunction.bat".
+  3. If a blue box says "Windows protected your PC": click "More info", then
+     "Run anyway". This only happens the first time.
+
+  It sets itself up, then opens malfunction in your web browser.
+  Leave the black window open while you use it; closing it quits malfunction.
+
+Every time after that: double-click "malfunction.bat".
+
+
+IF SOMETHING GOES WRONG
+-----------------------
+
+  - Make sure you're online and run it again. Setup continues where it stopped.
+  - Put the malfunction folder somewhere you own, like Desktop or Documents,
+    not on a shared or network drive.
+  - Still stuck? Take a screenshot of the Terminal / black window and send it to
+    your teacher.
+
+
+WHAT NEXT
+---------
+
+  Open MANUAL.md for the guide: your first rip, what every control does, recipes.
+  Commercial DVDs are copy-protected and won't work. Use home-made DVDs or any
+  video file (mp4, mov, ...).

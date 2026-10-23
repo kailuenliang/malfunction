@@ -1,9 +1,13 @@
-# malfunction – optional Python packages
-# the core ripper/mosher needs only the Python standard library + ffmpeg (brew install ffmpeg)
+# malfunction – Python packages
+# The installers (malfunction.command on Mac, malfunction.bat on Windows) put these into a
+# private environment inside .runtime/ – they never touch the computer's own Python.
 #
-# optical-flow engine (--engine flow, presets: flow, flow-swirl)
+# optical-flow engine, slow-motion interpolation, sound effects
 numpy>=1.21
 opencv-python>=4.5
+# certificates for the installer's downloads: the computer's own store first (truststore –
+# school networks often add their own certificate for web filtering), certifi as a fallback
+truststore
+certifi
 #
-# FFglitch (motion-vector hacking, --mv) is not a Python package:
-#   ./malfunction.py --install-ffglitch
+# ffmpeg and FFglitch are not Python packages: tools/setup_runtime.py downloads them into .runtime/

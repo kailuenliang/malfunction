@@ -2,9 +2,30 @@
 media/*
 !media/README.md
 
-# Generated output
+# Generated output (each render folder holds the video + its log)
 renders/
+out/
 TESTDISC/
+*.log
+
+# Never commit video or audio, wherever it ends up in the folder
+*.mp4
+*.m4v
+*.mov
+*.mkv
+*.avi
+*.webm
+*.vob
+*.m2v
+*.mpg
+*.mpeg
+*.ts
+*.iso
+*.wav
+*.aif
+*.aiff
+*.mp3
+*.m4a
 
 # Downloaded third-party tools (installed on demand)
 ffglitch/
@@ -17,3 +38,8 @@ __pycache__/
 # Local state
 .installed
 .DS_Store
+
+# Private Python, packages and ffmpeg (installed by malfunction.command / malfunction.bat)
+.runtime/
+# Built student zip
+dist/

@@ -14,21 +14,46 @@ DVD ──ffmpeg──▶ compressed frames ──▶ [FFglitch: motion-vector h
 DVD ──ffmpeg──▶ raw pixels ──▶ FLOW ENGINE (optical flow + motion hacks) ──▶ H.264 bake ──▶ .mp4 (+audio)
 ```
 
-## Install (macOS)
+## Install (Mac and Windows, one folder, nothing else touched)
 
-```bash
-brew install ffmpeg          # includes ffprobe + ffplay
-chmod +x malfunction.py
-```
+**For students:** see `START HERE.txt`.
 
-Python 3.8+. The core uses only the standard library. Two optional extras unlock more modes:
-
-| extra | unlocks | install |
+| | first time | after that |
 |---|---|---|
-| numpy + OpenCV (`requirements.txt`) | the `flow` engine | `python3 -m pip install --user -r requirements.txt` |
-| FFglitch 0.10.2 (not a Python package) | motion-vector hacking (`--mv`) on `xvid` / `native` | `./malfunction.py --install-ffglitch` (downloads into `./ffglitch`) |
+| Mac | In Terminal: type `bash `, drag `malfunction.command` into the window, press Enter. (Double-clicking also works on older macOS.) | double-click `malfunction.command` |
+| Windows | Extract the zip, double-click `malfunction.bat`. If SmartScreen appears: More info → Run anyway. | double-click `malfunction.bat` |
+| Linux (x86-64) | `bash malfunction.command` | same |
 
-**`malfunction.command` checks for both the first time you open it and installs whatever is missing.** Once both work, it writes a small `.installed` file and later launches skip the check. Delete `.installed` to make it check again. The UI also has install buttons in its motion hacking section.
+The first launch sets up everything inside a hidden **`.runtime/`** folder in the malfunction folder. It needs about 600–750 MB and a few minutes; later launches open straight away.
+
+| in `.runtime/` | what it is | from |
+|---|---|---|
+| `uv/` | the tool that fetches Python | [astral-sh/uv](https://github.com/astral-sh/uv) GitHub releases |
+| `python/`, `venv/` | a private Python 3.12 and its environment | python-build-standalone, via uv |
+| packages | numpy, OpenCV, truststore, certifi (`requirements.txt`) | PyPI, via uv |
+| `ffmpeg/` | ffmpeg, ffprobe, ffplay 9.x static builds | Mac/Linux: [martin-riedl.de](https://ffmpeg.martin-riedl.de); Windows: [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) essentials (checksum verified) |
+| `ffglitch/` | FFglitch 0.10.2 | [ffglitch.org](https://ffglitch.org) (checksum verified) |
+
+**Isolation:**
+
+- No admin rights are needed.
+- Nothing is installed system-wide.
+- No PATH, shell profile or registry changes are made.
+- The computer's own Python and ffmpeg (if any) are never used or modified.
+- uv is pointed at `.runtime/` for its Python installs, cache and tools.
+- On Windows, the private Python isn't registered in the registry (`UV_PYTHON_NO_REGISTRY`).
+
+I checked this with a fresh install using an empty home folder: nothing was written outside the malfunction folder. **Uninstall = delete the folder.**
+
+**Robustness:**
+
+- Every launch checks the setup. If the folder was moved (which breaks the private Python's links) or a download was interrupted, it repairs itself on the next launch.
+- Downloads retry, and use the computer's own certificate store (school web filters often add their own certificate).
+- After the first successful setup, the installer removes macOS's quarantine flag (or Windows' Mark of the Web) from its own folder only, so double-clicking works from then on.
+
+**Command line with the private setup:** `.runtime/venv/bin/python malfunction.py …` (Mac/Linux) or `.runtime\venv\Scripts\python.exe malfunction.py …` (Windows). The private ffmpeg is picked up automatically.
+
+**Without the installer** (your own Python 3.8+ and ffmpeg on PATH): `pip install -r requirements.txt` for the optional extras, and `./malfunction.py --install-ffglitch` for FFglitch. The core needs only the standard library.
 
 ## UI
 
@@ -296,7 +321,7 @@ A last-resort stretch of the finished video remains in the code in case a decode
 | `--flow-res W` | flow engine: width optical flow is computed at (default 640; higher is finer and slower) |
 | `--flow-interp cubic/linear` | flow engine: canvas resampling (cubic stays sharper over long smears) |
 | `--cut-threshold T` | flow engine: how different two frames must be to count as a scene cut |
-| `--install-ffglitch` | download FFglitch next to malfunction |
+| `--install-ffglitch` | download FFglitch (into `.runtime/` when the installer has set one up) |
 
 You can override any preset value with these flags.
 
