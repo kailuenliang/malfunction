@@ -70,23 +70,9 @@ On Windows use `.runtime\venv\Scripts\python.exe`. Every flag is listed in [REFE
 - [MANUAL.md](MANUAL.md): the full guide, with controls, recipes and troubleshooting
 - [REFERENCE.md](REFERENCE.md): how it works inside, every flag, more corruption ideas and the full reading list
 
-## Sources and inspirations
+## Credits
 
-### Artists and writing
-
-- **Takeshi Murata**, *Monster Movie* (2005): keyframe removal as sculpture. The `melt` preset descends from it. [Smithsonian American Art Museum](https://americanart.si.edu/artwork/monster-movie-86385) · [Wikipedia](https://en.wikipedia.org/wiki/Takeshi_Murata)
-- **Nick Briz**: the codec as material, and glitch as a way to see an invisible system. The `native` engine breaks the disc's own compression in that spirit. [*Glitch Codec Tutorial v3*](https://nickbriz.com/databending101/gctv3.html) · [*Thoughts on Glitch[Art] v2.0*](https://nickbriz.com/thoughtsonglitchart/thoughtsonglitchartv2.0.pdf) · [Rhizome profile](https://rhizome.org/editorial/2013/jul/15/artist-profile-nick-briz/)
-- **Rosa Menkman**: every format has its own artifacts, which is why each engine looks different. [*A Vernacular of File Formats*](https://beyondresolution.info/A-Vernacular-of-File-Formats) · [*The Glitch Moment(um)*](https://www.furtherfield.org/the-glitch-momentum/) · ["From compression artifact to filter"](http://rosa-menkman.blogspot.com/2009/02/from-compression-artifact-to-filter.html)
-- **Sound:** Yasunao Tone ([*Solo for Wounded CD*](https://www.academia.edu/8204212/Yasunao_Tones_Solo_for_Wounded_CD_and_the_Aesthetics_of_Failure), [*MP3 Deviations*](https://yasunaotone.bandcamp.com/album/mp3-deviations-6-7)), Oval, Nicolas Collins and Christian Marclay ([glitch music](https://en.wikipedia.org/wiki/Glitch_(music))), and Kim Cascone, ["The Aesthetics of Failure"](http://subsol.c3.hu/subsol_2/contributors3/casconetext.html) (2000). The stutter, freeze and decay effects come from this lineage.
-- [Glitch art (Wikipedia)](https://en.wikipedia.org/wiki/Glitch_art)
-
-### Techniques and tutorials
-
-- Yohan Chalier, ["Datamoshing"](https://chalier.fr/blog/datamoshing): H.264 keyframe removal and optical-flow transfer, the techniques behind the `h264` and `flow` engines
-- FFglitch, ["Glitching motion vectors in MPEG-2 files"](https://ffglitch.org/2020/07/mv.html) and ["Average motion vector tutorial"](https://ffglitch.org/2024/06/mv_avg_010.html): the basis of motion hacking (`mv_hack.js`)
-- [Glitchology: Datamoshing with Avidemux & FFmpeg](https://glitchology.com/datamoshing/) · [Glitchet: How to Datamosh, in Plain English](https://forum.glitchet.com/t/tutorial-make-video-glitch-art-how-to-datamosh-in-plain-english/36) · [datamoshing.com](http://datamoshing.com/2016/06/26/how-to-datamosh-videos/)
-- Antonio Roberts, [Databending using Audacity](https://www.hellocatfood.com/blog/databending-using-audacity/) · Reilly Spitzfaden, [Databending Part 2: Hacking MP3s](https://reillyspitzfaden.com/posts/2025/02/databending-part-2/)
-- [Group of pictures: I, P and B frames (Wikipedia)](https://en.wikipedia.org/wiki/Group_of_pictures)
+The artists, writing and tutorials behind malfunction are in [REFERENCE.md](REFERENCE.md#references).
 
 ### Earlier datamosh tools
 

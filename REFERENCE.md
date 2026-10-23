@@ -382,6 +382,15 @@ Ideas beyond what's built in. ✅ = in malfunction now.
 - Rosa Menkman, "From compression artifact to filter" (2009): http://rosa-menkman.blogspot.com/2009/02/from-compression-artifact-to-filter.html
 - Glitch art (Wikipedia): https://en.wikipedia.org/wiki/Glitch_art
 
+**Sound**
+
+- Yasunao Tone, *Solo for Wounded CD* and the aesthetics of failure: https://www.academia.edu/8204212/Yasunao_Tones_Solo_for_Wounded_CD_and_the_Aesthetics_of_Failure
+- Yasunao Tone, *MP3 Deviations #6+7*: https://yasunaotone.bandcamp.com/album/mp3-deviations-6-7
+- Kim Cascone, "The Aesthetics of Failure" (2000): http://subsol.c3.hu/subsol_2/contributors3/casconetext.html
+- Glitch music: Oval, Nicolas Collins, Christian Marclay (Wikipedia): https://en.wikipedia.org/wiki/Glitch_(music)
+- Antonio Roberts, "Databending using Audacity": https://www.hellocatfood.com/blog/databending-using-audacity/
+- Reilly Spitzfaden, "Databending Part 2: Hacking MP3s": https://reillyspitzfaden.com/posts/2025/02/databending-part-2/
+
 **Techniques and tutorials**
 
 - Yohan Chalier, "Datamoshing" (H.264 IDR removal, optical-flow transfer): https://chalier.fr/blog/datamoshing
